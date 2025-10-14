@@ -1,0 +1,31 @@
+---
+base_packages_common:
+  - curl
+  - hstr
+  - fzf
+  - jq
+  - tcpdump
+  - vim
+
+base_packages_debian_extra:
+  - ctop
+  - needrestart
+  - cron
+  - ca-certificates
+
+base_install_recommends: false
+base_enable_unattended_upgrades: true
+base_cache_valid_time: 3600
+base_timezone: "UTC"
+base_locale: "en_US.UTF-8"
+base_generate_locales: ["en_US.UTF-8 UTF-8"]
+base_disable_motd_news: true
+base_enable_chrony: true
+base_ssh_password_auth: false
+base_ssh_permit_root: "prohibit-password"
+base_ssh_x11_forwarding: false
+base_ssh_client_alive_interval: 300
+base_ssh_client_alive_count_max: 2
+base_journal_storage_persistent: true
+base_journal_system_max_use: "200M"
+base_journal_runtime_max_use: "200M"

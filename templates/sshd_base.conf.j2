@@ -1,0 +1,9 @@
+# Managed by Ansible (base role)
+PasswordAuthentication {{ 'yes' if base_ssh_password_auth else 'no' }}
+PermitRootLogin {{ base_ssh_permit_root }}
+X11Forwarding {{ 'yes' if base_ssh_x11_forwarding else 'no' }}
+ClientAliveInterval {{ base_ssh_client_alive_interval }}
+ClientAliveCountMax {{ base_ssh_client_alive_count_max }}
+UseDNS no
+LoginGraceTime 30
+MaxAuthTries 3

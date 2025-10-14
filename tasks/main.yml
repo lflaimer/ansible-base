@@ -1,0 +1,147 @@
+---
+- name: Gather facts
+  ansible.builtin.setup:
+  tags: [always]
+
+# APT hygiene & packages
+- name: APT | Update cache & dist-upgrade
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: "{{ base_cache_valid_time }}"
+    upgrade: dist
+  tags: [packages]
+
+- name: APT | Install packages
+  ansible.builtin.apt:
+    name: "{{ base_packages_common + base_packages_debian_extra }}"
+    state: present
+    install_recommends: "{{ base_install_recommends }}"
+  tags: [packages]
+
+- name: APT | Autoremove/clean
+  ansible.builtin.apt:
+    autoremove: yes
+    autoclean: yes
+  tags: [packages]
+
+# Unattended upgrades
+- name: APT | Ensure unattended-upgrades present
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+  when: base_enable_unattended_upgrades
+  tags: [upgrades]
+
+- name: APT | Configure unattended upgrades
+  ansible.builtin.template:
+    src: 50-unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    owner: root
+    group: root
+    mode: "0644"
+  when: base_enable_unattended_upgrades
+  tags: [upgrades]
+
+- name: APT | Enable periodic updates
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+  when: base_enable_unattended_upgrades
+  tags: [upgrades]
+
+# Timezone, locale, time sync
+- name: TIME | Set timezone
+  ansible.builtin.timezone:
+    name: "{{ base_timezone }}"
+  tags: [time]
+
+- name: LOCALE | Generate required locales
+  ansible.builtin.lineinfile:
+    path: /etc/locale.gen
+    regexp: '^{{ item | regex_escape }}$'
+    line: "{{ item }}"
+    create: yes
+  loop: "{{ base_generate_locales }}"
+  tags: [locale]
+
+- name: LOCALE | Run locale-gen
+  ansible.builtin.command: locale-gen
+  changed_when: true
+  tags: [locale]
+
+- name: LOCALE | Set system default locale
+  ansible.builtin.command: "update-locale LANG={{ base_locale }}"
+  changed_when: true
+  tags: [locale]
+
+- name: TIME | Install chrony
+  ansible.builtin.apt:
+    name: chrony
+    state: present
+  when: base_enable_chrony
+  tags: [time]
+
+- name: TIME | Enable/start chrony
+  ansible.builtin.service:
+    name: chrony
+    enabled: true
+    state: started
+  when: base_enable_chrony
+  tags: [time]
+
+# Hostname & /etc/hosts
+- name: HOSTNAME | Set hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+  tags: [hostname]
+
+- name: HOSTS | Ensure 127.0.1.1 maps to hostname
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1\s+'
+    line: "127.0.1.1 {{ inventory_hostname }} {{ inventory_hostname_short | default(inventory_hostname.split('.')[0]) }}"
+    create: yes
+  tags: [hostname]
+
+# SSH hardening (snippet)
+- name: SSH | Drop hardened config snippet
+  ansible.builtin.template:
+    src: sshd_base.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-base.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart sshd
+  tags: [ssh, hardening]
+
+# Journald persistence/limits
+- name: JOURNALD | Configure persistent storage & limits
+  ansible.builtin.template:
+    src: journald-base.conf.j2
+    dest: /etc/systemd/journald.conf.d/10-base.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart systemd-journald
+  tags: [logs]
+
+# Hygiene
+- name: HYGIENE | needrestart noninteractive
+  ansible.builtin.lineinfile:
+    path: /etc/needrestart/needrestart.conf
+    regexp: '^#?\s*\$nrconf{restart}'
+    line: '$nrconf{restart} = "a";'
+    create: yes
+  tags: [hygiene]
+
+- name: HYGIENE | Disable motd-news
+  ansible.builtin.lineinfile:
+    path: /etc/default/motd-news
+    regexp: '^ENABLED='
+    line: 'ENABLED=0'
+    create: yes
+  when: base_disable_motd_news
+  tags: [hygiene]

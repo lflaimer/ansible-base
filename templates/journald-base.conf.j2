@@ -1,0 +1,7 @@
+# Managed by Ansible (base role)
+[Journal]
+Storage={{ 'persistent' if base_journal_storage_persistent else 'auto' }}
+SystemMaxUse={{ base_journal_system_max_use }}
+RuntimeMaxUse={{ base_journal_runtime_max_use }}
+Compress=yes
+SyncIntervalSec=5m

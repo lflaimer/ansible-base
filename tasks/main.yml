@@ -3,7 +3,6 @@
   ansible.builtin.setup:
   tags: [always]
 
-# APT hygiene & packages
 - name: APT | Update cache & dist-upgrade
   ansible.builtin.apt:
     update_cache: yes
@@ -24,7 +23,6 @@
     autoclean: yes
   tags: [packages]
 
-# Unattended upgrades
 - name: APT | Ensure unattended-upgrades present
   ansible.builtin.apt:
     name: unattended-upgrades
@@ -52,7 +50,6 @@
   when: base_enable_unattended_upgrades
   tags: [upgrades]
 
-# Timezone, locale, time sync
 - name: TIME | Set timezone
   ansible.builtin.timezone:
     name: "{{ base_timezone }}"
@@ -117,7 +114,24 @@
   notify: Restart sshd
   tags: [ssh, hardening]
 
-# Journald persistence/limits
+- name: JOURNALD | Ensure drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [logs]
+
+- name: JOURNALD | Ensure /var/log/journal exists
+  ansible.builtin.file:
+    path: /var/log/journal
+    state: directory
+    owner: root
+    group: systemd-journal
+    mode: "02755"
+  tags: [logs]
+
 - name: JOURNALD | Configure persistent storage & limits
   ansible.builtin.template:
     src: journald-base.conf.j2
@@ -128,7 +142,6 @@
   notify: Restart systemd-journald
   tags: [logs]
 
-# Hygiene
 - name: HYGIENE | needrestart noninteractive
   ansible.builtin.lineinfile:
     path: /etc/needrestart/needrestart.conf

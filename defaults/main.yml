@@ -8,7 +8,6 @@ base_packages_common:
   - vim
 
 base_packages_debian_extra:
-  - ctop
   - needrestart
   - cron
   - ca-certificates

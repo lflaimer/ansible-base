@@ -23,13 +23,6 @@
     autoclean: yes
   tags: [packages]
 
-- name: Ensure kubernetes Python libraries are installed
-  ansible.builtin.pip:
-    name: "{{ python_packages }}"
-    state: present
-  become: true
-
-
 - name: APT | Ensure unattended-upgrades present
   ansible.builtin.apt:
     name: unattended-upgrades

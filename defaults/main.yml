@@ -6,11 +6,15 @@ base_packages_common:
   - jq
   - tcpdump
   - vim
+  - python3
+  - python3-pip
 
 base_packages_debian_extra:
   - needrestart
   - cron
   - ca-certificates
+
+python_packages: ""
 
 base_install_recommends: false
 base_enable_unattended_upgrades: true
